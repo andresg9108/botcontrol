@@ -1,0 +1,51 @@
+# Varios / Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Archivos de IntelliJ / IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# La carpeta .vscode contiene las configuraciones de ejecución y tareas de
+# VS Code que quizá quieras versionar; por eso la regla está comentada por defecto.
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Archivos de Flutter, Dart y Pub / Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Archivos de simbolización / Symbolication related
+app.*.symbols
+
+# Archivos de ofuscación / Obfuscation related
+app.*.map.json
+
+# Android Studio guardará aquí los artefactos de compilación.
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Archivos de vista previa de widgets / Widget Preview related
+.widget_preview/
