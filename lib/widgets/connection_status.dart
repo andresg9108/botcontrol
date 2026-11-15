@@ -24,7 +24,9 @@ class ConnectionStatus extends StatelessWidget {
     decoration: BoxDecoration(
       color: AppColors.panel,
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white10),
+      border: Border.all(
+        color: connected ? AppColors.accent : AppColors.outline,
+      ),
     ),
     child: Wrap(
       spacing: 16,
@@ -36,9 +38,11 @@ class ConnectionStatus extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.circle,
-              size: 9,
-              color: connected ? AppColors.accent : Colors.white38,
+              connected
+                  ? Icons.bluetooth_connected_rounded
+                  : Icons.bluetooth_searching_rounded,
+              size: 24,
+              color: connected ? AppColors.accent : AppColors.muted,
             ),
             const SizedBox(width: 10),
             Flexible(
@@ -61,8 +65,14 @@ class ConnectionStatus extends StatelessWidget {
                   Text(
                     connected
                         ? 'Bluetooth LE conectado'
+                        : connecting
+                        ? 'Preparando el control…'
                         : 'Busca tu robot por Bluetooth',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),

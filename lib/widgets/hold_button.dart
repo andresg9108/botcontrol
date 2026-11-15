@@ -45,6 +45,7 @@ class _HoldButtonState extends State<HoldButton> {
     label: '${widget.label}, mantener pulsado',
     button: true,
     enabled: widget.enabled,
+    excludeSemantics: true,
     child: RawGestureDetector(
       // Reserva los dedos para conducir sin activar el scroll de la pantalla.
       // Reserves touch input for driving without triggering screen scrolling.
@@ -77,40 +78,69 @@ class _HoldButtonState extends State<HoldButton> {
           }
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 90),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 120),
           height: widget.height,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: widget.pressed ? AppColors.accent : AppColors.panel,
+            color: widget.enabled && widget.pressed
+                ? AppColors.controlPressed
+                : AppColors.panel,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: widget.pressed ? AppColors.accent : Colors.white10,
+              color: widget.enabled && widget.pressed
+                  ? AppColors.controlPressed
+                  : widget.enabled
+                  ? AppColors.outline
+                  : AppColors.raised,
+              width: 2,
             ),
           ),
-          child: Opacity(
-            opacity: widget.enabled ? 1 : 0.3,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final icon = Icon(
                   widget.icon,
-                  size: 34,
-                  color: widget.pressed ? Colors.black : AppColors.accent,
-                ),
-                const SizedBox(height: 10),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: widget.pressed ? Colors.black : Colors.white,
-                      letterSpacing: 1.3,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  size: 32,
+                  color: widget.enabled && widget.pressed
+                      ? Colors.white
+                      : widget.enabled
+                      ? AppColors.accent
+                      : AppColors.muted,
+                );
+                final label = Text(
+                  widget.label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: widget.enabled ? Colors.white : AppColors.muted,
+                    letterSpacing: 0.3,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
-                ),
-              ],
+                );
+                // En poca altura, el texto conserva su escala junto al icono.
+                if (constraints.maxHeight < 90 && constraints.maxWidth >= 180) {
+                  return Row(
+                    children: [
+                      icon,
+                      const SizedBox(width: 6),
+                      Expanded(child: label),
+                    ],
+                  );
+                }
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: FittedBox(fit: BoxFit.scaleDown, child: icon),
+                    ),
+                    const SizedBox(height: 6),
+                    label,
+                  ],
+                );
+              },
             ),
           ),
         ),

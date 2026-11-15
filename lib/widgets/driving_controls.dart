@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../protocol/robot_protocol.dart';
+import '../theme/app_colors.dart';
 import 'hold_button.dart';
 
 class DrivingControls extends StatelessWidget {
@@ -27,6 +28,7 @@ class DrivingControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
     Widget button(
       String label,
       IconData icon,
@@ -45,73 +47,104 @@ class DrivingControls extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 6,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: button(
-                        'IZQUIERDA',
-                        Icons.west_rounded,
-                        RobotProtocol.izquierda,
-                        onLeftChanged,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: SizedBox(
+                  height: constraints.maxHeight.clamp(0, 320 * textScale),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Center(
+                          child: SizedBox(
+                            height: constraints.maxHeight.clamp(
+                              0,
+                              112 * textScale,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: button(
+                                    'IZQUIERDA',
+                                    Icons.arrow_circle_left_rounded,
+                                    RobotProtocol.izquierda,
+                                    onLeftChanged,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: button(
+                                    'DERECHA',
+                                    Icons.arrow_circle_right_rounded,
+                                    RobotProtocol.derecha,
+                                    onRightChanged,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: button(
-                        'DERECHA',
-                        Icons.east_rounded,
-                        RobotProtocol.derecha,
-                        onRightChanged,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: button(
+                                'ACELERAR',
+                                Icons.arrow_circle_up_rounded,
+                                RobotProtocol.adelante,
+                                onForwardChanged,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: button(
+                                'RETROCEDER',
+                                Icons.arrow_circle_down_rounded,
+                                RobotProtocol.atras,
+                                onReverseChanged,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: button(
-                        'ACELERAR',
-                        Icons.north_rounded,
-                        RobotProtocol.adelante,
-                        onForwardChanged,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: button(
-                        'ATRÁS',
-                        Icons.south_rounded,
-                        RobotProtocol.atras,
-                        onReverseChanged,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: connected ? onStop : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF42252B),
-            foregroundColor: const Color(0xFFFF8D98),
-            minimumSize: const Size.fromHeight(44),
+        const SizedBox(height: 12),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: connected ? onStop : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.dangerSurface,
+                  foregroundColor: AppColors.danger,
+                  disabledBackgroundColor: AppColors.panel,
+                  disabledForegroundColor: AppColors.muted,
+                  side: BorderSide(
+                    color: connected ? AppColors.danger : AppColors.outline,
+                  ),
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                icon: const Icon(Icons.stop_circle_outlined),
+                label: const Text('DETENER'),
+              ),
+            ),
           ),
-          icon: const Icon(Icons.stop_circle_outlined),
-          label: const Text('DETENER'),
         ),
       ],
     );

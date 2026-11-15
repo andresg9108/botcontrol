@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../controllers/robot_controller.dart';
@@ -15,71 +13,89 @@ class ControlScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: controller,
-    builder: (context, _) => LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-        child: SizedBox(
-          height: math.max(260, constraints.maxHeight - 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.circle,
-                    size: 8,
-                    color: controller.connected
-                        ? AppColors.accent
-                        : Colors.white38,
+    builder: (context, _) => Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: LayoutBuilder(
+          builder: (context, constraints) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(constraints.maxHeight < 344 ? 4 : 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.panel,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.raised),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      controller.connected
-                          ? 'Conectado · ${controller.deviceName ?? 'agbot'}'
-                          : controller.connecting
-                          ? 'Conectando…'
-                          : 'Sin conexión',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: MotorTelemetry(
-                      connected: controller.connected,
-                      status: controller.status,
-                    ),
-                  ),
-                ],
-              ),
-              if (controller.error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    controller.error!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.orangeAccent,
-                      fontSize: 12,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        controller.connected
+                            ? Icons.bluetooth_connected_rounded
+                            : Icons.bluetooth_disabled_rounded,
+                        size: 22,
+                        color: controller.connected
+                            ? AppColors.accent
+                            : AppColors.muted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          controller.connected
+                              ? 'Conectado · ${controller.deviceName ?? 'agbot'}'
+                              : controller.connecting
+                              ? 'Conectando…'
+                              : 'Sin conexión',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: MotorTelemetry(
+                          connected: controller.connected,
+                          status: controller.status,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: DrivingControls(
-                  connected: controller.connected,
-                  outputFault: controller.status.outputFault,
-                  buttons: controller.buttons,
-                  onLeftChanged: controller.girarIzquierda,
-                  onRightChanged: controller.girarDerecha,
-                  onForwardChanged: controller.acelerar,
-                  onReverseChanged: controller.retroceder,
-                  onStop: controller.stop,
+                if (controller.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 80),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          controller.error!,
+                          style: const TextStyle(
+                            color: AppColors.danger,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: DrivingControls(
+                    connected: controller.connected,
+                    outputFault: controller.status.outputFault,
+                    buttons: controller.buttons,
+                    onLeftChanged: controller.girarIzquierda,
+                    onRightChanged: controller.girarDerecha,
+                    onForwardChanged: controller.acelerar,
+                    onReverseChanged: controller.retroceder,
+                    onStop: controller.stop,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

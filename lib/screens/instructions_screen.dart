@@ -7,21 +7,39 @@ class InstructionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
     child: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 680),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.raised,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'GUÍA DE CONDUCCIÓN',
+                style: TextStyle(
+                  color: AppColors.accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               'Tu primera ruta con agbot',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.5),
             ),
             const SizedBox(height: 8),
             const Text(
               'El teléfono controla tu robot ESP32 por Bluetooth LE.',
-              style: TextStyle(color: Colors.white60),
+              style: TextStyle(color: AppColors.muted, height: 1.5),
             ),
             const SizedBox(height: 24),
             const _Instruction(
@@ -53,7 +71,7 @@ class InstructionsScreen extends StatelessWidget {
               icon: Icons.speed_rounded,
               title: '4. Consulta el estado',
               text:
-                  'Arriba verás si estás conectado y el nivel de aceleración. '
+                  'Arriba verás si estás conectado y el nivel de PWM. '
                   'El porcentaje es la potencia PWM reportada por el robot, '
                   'no una medición de velocidad.',
             ),
@@ -85,26 +103,48 @@ class _Instruction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 24),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.accent),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Text(
-                text,
-                style: const TextStyle(color: Colors.white70, height: 1.5),
-              ),
-            ],
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.panel,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.raised),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.raised,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.accent, size: 22),
           ),
-        ),
-      ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  text,
+                  style: const TextStyle(color: AppColors.muted, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

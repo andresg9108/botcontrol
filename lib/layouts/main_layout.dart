@@ -81,10 +81,10 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     listenable: robot,
     builder: (context, _) => Scaffold(
       appBar: AppBar(
-        toolbarHeight: 48,
+        toolbarHeight: 56,
         title: Text(
           _page == _MainPage.control ? 'agbot · Control' : 'Instrucciones',
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
       ),
       onDrawerChanged: (open) {
@@ -93,13 +93,37 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       drawer: Drawer(
         child: SafeArea(
           child: ListView(
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               const Padding(
                 padding: EdgeInsets.all(24),
-                child: Text(
-                  'agbot',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.settings_remote_rounded,
+                      color: AppColors.accent,
+                      size: 36,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'agbot',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'CONTROL REMOTO · BLE',
+                      style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Padding(

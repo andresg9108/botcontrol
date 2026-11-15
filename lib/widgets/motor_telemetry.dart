@@ -28,20 +28,18 @@ class MotorTelemetry extends StatelessWidget {
         : 'DETENIDO';
     return Tooltip(
       message:
-          '$label · PWM izquierdo ${status.left} % · derecho ${status.right} %',
+          '$label · PWM izquierdo ${connected ? status.left : 0} % · derecho ${connected ? status.right : 0} %',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            status.outputFault
+            connected && status.outputFault
                 ? label
-                : 'Aceleración ${connected ? status.base : 0} %',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+                : 'PWM · ${connected ? status.base : 0} %',
             style: TextStyle(
-              color: status.outputFault
-                  ? Colors.orangeAccent
+              color: connected && status.outputFault
+                  ? AppColors.danger
                   : AppColors.accent,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -52,9 +50,10 @@ class MotorTelemetry extends StatelessWidget {
             width: 150,
             child: LinearProgressIndicator(
               value: connected ? (status.base / 100).clamp(0, 1) : 0,
-              minHeight: 3,
+              minHeight: 6,
               borderRadius: BorderRadius.circular(4),
-              backgroundColor: Colors.white10,
+              backgroundColor: AppColors.raised,
+              color: AppColors.accent,
             ),
           ),
         ],
