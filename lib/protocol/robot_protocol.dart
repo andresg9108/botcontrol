@@ -1,10 +1,22 @@
-// Cada comando representa todos los botones en un único byte binario.
-// Each command represents all buttons in a single binary byte.
+// Comandos BLE: máscara de botones e intensidad de giro (0..100 %).
+// BLE commands: button mask and steering intensity (0..100%).
 abstract final class RobotProtocol {
   static const adelante = 0x01;
   static const atras = 0x02;
   static const izquierda = 0x04;
   static const derecha = 0x08;
+
+  static List<int> packet(int buttons, int turnPercent) {
+    if (buttons < 0 ||
+        buttons > 15 ||
+        buttons & 3 == 3 ||
+        buttons & 12 == 12 ||
+        turnPercent < 0 ||
+        turnPercent > 100) {
+      return [0, 0];
+    }
+    return [buttons, buttons & 12 == 0 ? 0 : turnPercent];
+  }
 
   static int command(Set<int> buttons) {
     final mask = buttons.fold(0, (value, bit) => value | bit);

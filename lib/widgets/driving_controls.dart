@@ -15,6 +15,11 @@ class DrivingControls extends StatelessWidget {
     required this.onForwardChanged,
     required this.onReverseChanged,
     required this.onStop,
+    this.accelerometerEnabled = false,
+    this.tiltReady = false,
+    this.tiltPercent = 0,
+    this.tiltError,
+    this.onRecenter,
   });
 
   final bool connected;
@@ -25,6 +30,11 @@ class DrivingControls extends StatelessWidget {
   final ValueChanged<bool> onForwardChanged;
   final ValueChanged<bool> onReverseChanged;
   final VoidCallback onStop;
+  final bool accelerometerEnabled;
+  final bool tiltReady;
+  final int tiltPercent;
+  final String? tiltError;
+  final VoidCallback? onRecenter;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +48,8 @@ class DrivingControls extends StatelessWidget {
       label: label,
       icon: icon,
       height: double.infinity,
-      enabled: connected && !outputFault,
+      enabled:
+          connected && !outputFault && (!accelerometerEnabled || tiltReady),
       pressed: buttons & bit != 0,
       onChanged: action,
     );
@@ -46,6 +57,47 @@ class DrivingControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (accelerometerEnabled)
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 64),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          tiltError ??
+                              (!connected
+                                  ? 'Volante · Sin conexión'
+                                  : !tiltReady
+                                  ? 'Sostén el teléfono como un volante'
+                                  : tiltPercent == 0
+                                  ? 'Volante · Recto'
+                                  : 'Volante · ${tiltPercent < 0 ? 'Izquierda' : 'Derecha'} ${tiltPercent.abs()} %'),
+                          style: TextStyle(
+                            color: tiltError == null
+                                ? null
+                                : Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Centrar volante y detener',
+                    onPressed: connected ? onRecenter : null,
+                    icon: const Icon(Icons.center_focus_strong_rounded),
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) => Center(
@@ -56,43 +108,47 @@ class DrivingControls extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        flex: 3,
-                        child: Center(
-                          child: SizedBox(
-                            height: constraints.maxHeight.clamp(
-                              0,
-                              112 * textScale,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: button(
-                                    'IZQUIERDA',
-                                    Icons.arrow_circle_left_rounded,
-                                    RobotProtocol.izquierda,
-                                    onLeftChanged,
+                      if (!accelerometerEnabled)
+                        Expanded(
+                          flex: 3,
+                          child: Center(
+                            child: SizedBox(
+                              height: constraints.maxHeight.clamp(
+                                0,
+                                112 * textScale,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: button(
+                                      'IZQUIERDA',
+                                      Icons.arrow_circle_left_rounded,
+                                      RobotProtocol.izquierda,
+                                      onLeftChanged,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: button(
-                                    'DERECHA',
-                                    Icons.arrow_circle_right_rounded,
-                                    RobotProtocol.derecha,
-                                    onRightChanged,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: button(
+                                      'DERECHA',
+                                      Icons.arrow_circle_right_rounded,
+                                      RobotProtocol.derecha,
+                                      onRightChanged,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
+                      if (!accelerometerEnabled) const SizedBox(width: 16),
                       Expanded(
                         flex: 2,
-                        child: Column(
+                        child: Flex(
+                          direction: accelerometerEnabled
+                              ? Axis.horizontal
+                              : Axis.vertical,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
@@ -103,7 +159,10 @@ class DrivingControls extends StatelessWidget {
                                 onForwardChanged,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: accelerometerEnabled ? 0 : 10,
+                              width: accelerometerEnabled ? 16 : 0,
+                            ),
                             Expanded(
                               child: button(
                                 'RETROCEDER',

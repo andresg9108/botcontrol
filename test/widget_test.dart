@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import 'package:remotecontrol/app.dart';
 import 'package:remotecontrol/controllers/robot_controller.dart';
+import 'package:remotecontrol/controllers/settings_controller.dart';
 import 'package:remotecontrol/layouts/main_layout.dart';
 import 'package:remotecontrol/screens/control_screen.dart';
 import 'package:remotecontrol/screens/instructions_screen.dart';
@@ -21,6 +22,86 @@ import 'package:remotecontrol/widgets/device_picker.dart';
 import 'package:remotecontrol/widgets/hold_button.dart';
 
 void main() {
+  for (final size in [const Size(320, 800), const Size(800, 360)]) {
+    for (final page in ['Configuraciones', 'Instrucciones']) {
+      testWidgets('$page mantiene el tema y admite texto 2x en $size', (
+        tester,
+      ) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final semantics = tester.ensureSemantics();
+        final settings = SettingsController()..loaded = true;
+        final robot = RobotController();
+        try {
+          await tester.pumpWidget(const RobotApp());
+          final appTheme = tester
+              .widget<MaterialApp>(find.byType(MaterialApp))
+              .theme;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: appTheme,
+              home: MainLayout(
+                key: const ValueKey('style-check'),
+                controller: robot,
+                settings: settings,
+              ),
+            ),
+          );
+          await tester.tap(find.byTooltip('Open navigation menu'));
+          await tester.pumpAndSettle();
+          final destination = find.widgetWithText(ListTile, page);
+          await tester.scrollUntilVisible(
+            destination,
+            120,
+            scrollable: find.descendant(
+              of: find.byType(Drawer),
+              matching: find.byType(Scrollable),
+            ),
+          );
+          await Scrollable.ensureVisible(
+            tester.element(destination),
+            alignment: 0.5,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(destination);
+          await tester.pumpAndSettle();
+          // Conserva el tema real de RobotApp, con ampliación sobre la página.
+          final screenContext = tester.element(
+            find.byType(
+              page == 'Configuraciones' ? SwitchListTile : InstructionsScreen,
+            ),
+          );
+          final theme = Theme.of(screenContext);
+          expect(theme.brightness, Brightness.dark);
+          expect(theme.useMaterial3, isTrue);
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          final scroll = find
+              .descendant(
+                of: find.byType(
+                  page == 'Configuraciones' ? Scaffold : InstructionsScreen,
+                ),
+                matching: find.byType(Scrollable),
+              )
+              .last;
+          await tester.drag(scroll, const Offset(0, -500));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        } finally {
+          await tester.pumpWidget(const SizedBox());
+          semantics.dispose();
+          settings.dispose();
+          robot.dispose();
+        }
+      });
+    }
+  }
+
   testWidgets('El control inicia desconectado', (WidgetTester tester) async {
     await tester.pumpWidget(const RobotApp());
     expect(find.text('Sin conexión'), findsOneWidget);

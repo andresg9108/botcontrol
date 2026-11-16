@@ -3,18 +3,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../controllers/robot_controller.dart';
+import '../controllers/settings_controller.dart';
+import '../controllers/tilt_steering_controller.dart';
 import '../screens/control_screen.dart';
 import '../screens/instructions_screen.dart';
+import '../screens/settings_screen.dart';
 import '../theme/app_colors.dart';
 import '../widgets/connection_status.dart';
 import '../widgets/device_picker.dart';
 
-enum _MainPage { control, instructions }
+enum _MainPage { control, instructions, settings }
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key, this.controller});
+  const MainLayout({
+    super.key,
+    this.controller,
+    this.settings,
+    this.tiltSamples,
+  });
 
   final RobotController? controller;
+  final SettingsController? settings;
+  final Stream<TiltSample>? tiltSamples;
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -22,22 +32,37 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
   late final robot = widget.controller ?? RobotController();
+  late final settings = widget.settings ?? SettingsController();
   var _page = _MainPage.control;
+  bool _foreground = true;
+  bool _drawerOpen = false;
+  bool _modalOpen = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    settings.addListener(_settingsChanged);
+    robot.setAccelerometerEnabled(settings.accelerometerEnabled);
+    if (!settings.loaded) unawaited(settings.load());
+  }
+
+  void _settingsChanged() {
+    robot.setAccelerometerEnabled(settings.accelerometerEnabled);
+    if (mounted) setState(() {});
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) robot.stop();
+    setState(() => _foreground = state == AppLifecycleState.resumed);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    settings.removeListener(_settingsChanged);
+    if (widget.settings == null) settings.dispose();
     if (widget.controller == null) {
       robot.dispose();
     } else {
@@ -54,6 +79,7 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
 
   Future<void> _showDevices() async {
     robot.stop();
+    setState(() => _modalOpen = true);
     unawaited(robot.search());
     await showModalBottomSheet<void>(
       context: context,
@@ -74,6 +100,54 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       ),
     );
     await robot.stopSearch();
+    if (mounted) setState(() => _modalOpen = false);
+  }
+
+  Future<void> _showTurnIntensity() async {
+    robot.stop();
+    setState(() => _modalOpen = true);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ListenableBuilder(
+            listenable: robot,
+            builder: (context, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Intensidad de giro · ${robot.manualTurnPercent} %',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Se aplica a IZQUIERDA y DERECHA, tanto al avanzar como al retroceder. 0 % sigue recto; 100 % deja sin potencia el lado interior.',
+                  style: TextStyle(color: AppColors.muted, height: 1.5),
+                ),
+                Slider(
+                  value: robot.manualTurnPercent.toDouble(),
+                  max: 100,
+                  divisions: 20,
+                  label: '${robot.manualTurnPercent} %',
+                  semanticFormatterCallback: (value) =>
+                      'Intensidad de giro: ${value.round()} por ciento',
+                  onChanged: (value) =>
+                      robot.setManualTurnPercent(value.round()),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Listo'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (mounted) setState(() => _modalOpen = false);
   }
 
   @override
@@ -82,13 +156,23 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
     builder: (context, _) => Scaffold(
       appBar: AppBar(
         toolbarHeight: 56,
-        title: Text(
-          _page == _MainPage.control ? 'agbot · Control' : 'Instrucciones',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
+        actions: [
+          if (_page == _MainPage.control && !settings.accelerometerEnabled)
+            IconButton(
+              tooltip: 'Intensidad de giro: ${robot.manualTurnPercent} %',
+              onPressed: _showTurnIntensity,
+              icon: const Icon(Icons.tune_rounded),
+            ),
+        ],
+        title: Text(switch (_page) {
+          _MainPage.control => 'agbot · Control',
+          _MainPage.instructions => 'Instrucciones',
+          _MainPage.settings => 'Configuraciones',
+        }, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       onDrawerChanged: (open) {
         if (open) robot.stop();
+        setState(() => _drawerOpen = open);
       },
       drawer: Drawer(
         child: SafeArea(
@@ -155,6 +239,13 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
                 onTap: () => _selectPage(_MainPage.instructions),
               ),
               const Divider(indent: 16, endIndent: 16),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Configuraciones'),
+                selected: _page == _MainPage.settings,
+                selectedColor: AppColors.accent,
+                onTap: () => _selectPage(_MainPage.settings),
+              ),
               const SizedBox(height: 120),
             ],
           ),
@@ -162,9 +253,22 @@ class _MainLayoutState extends State<MainLayout> with WidgetsBindingObserver {
       ),
       body: SafeArea(
         top: false,
-        child: _page == _MainPage.control
-            ? ControlScreen(controller: robot)
-            : const InstructionsScreen(),
+        child: switch (_page) {
+          _MainPage.control => ControlScreen(
+            controller: robot,
+            accelerometerEnabled: settings.accelerometerEnabled,
+            active: _foreground && !_drawerOpen && !_modalOpen,
+            tiltSamples: widget.tiltSamples,
+          ),
+          _MainPage.instructions => const InstructionsScreen(),
+          _MainPage.settings => SettingsScreen(
+            settings: settings,
+            onChanged: (enabled) {
+              robot.stop();
+              unawaited(settings.setAccelerometerEnabled(enabled));
+            },
+          ),
+        },
       ),
     ),
   );

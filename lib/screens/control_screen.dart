@@ -1,18 +1,57 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/robot_controller.dart';
+import '../controllers/tilt_steering_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/driving_controls.dart';
 import '../widgets/motor_telemetry.dart';
 
-class ControlScreen extends StatelessWidget {
-  const ControlScreen({super.key, required this.controller});
+class ControlScreen extends StatefulWidget {
+  const ControlScreen({
+    super.key,
+    required this.controller,
+    this.accelerometerEnabled = false,
+    this.active = true,
+    this.tiltSamples,
+  });
 
   final RobotController controller;
+  final bool accelerometerEnabled;
+  final bool active;
+  final Stream<TiltSample>? tiltSamples;
+
+  @override
+  State<ControlScreen> createState() => _ControlScreenState();
+}
+
+class _ControlScreenState extends State<ControlScreen> {
+  late final tilt = TiltSteeringController(
+    robot: widget.controller,
+    samples: widget.tiltSamples,
+  );
+  RobotController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    tilt.setActive(widget.active && widget.accelerometerEnabled);
+  }
+
+  @override
+  void didUpdateWidget(covariant ControlScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    tilt.setActive(widget.active && widget.accelerometerEnabled);
+  }
+
+  @override
+  void dispose() {
+    tilt.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, tilt]),
     builder: (context, _) => Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1100),
@@ -49,6 +88,7 @@ class ControlScreen extends StatelessWidget {
                               ? 'Conectando…'
                               : 'Sin conexión',
                           overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -57,9 +97,17 @@ class ControlScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
+                        flex: 2,
                         child: MotorTelemetry(
                           connected: controller.connected,
                           status: controller.status,
+                          buttons: controller.buttons,
+                          turnPercent: controller.turnPercent,
+                          compact:
+                              constraints.maxHeight < 344 ||
+                              (constraints.maxHeight < 600 &&
+                                  MediaQuery.textScalerOf(context).scale(12) >
+                                      18),
                         ),
                       ),
                     ],
@@ -84,8 +132,13 @@ class ControlScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: DrivingControls(
-                    connected: controller.connected,
+                    connected: controller.connected && widget.active,
                     outputFault: controller.status.outputFault,
+                    accelerometerEnabled: widget.accelerometerEnabled,
+                    tiltReady: tilt.ready,
+                    tiltPercent: tilt.percent,
+                    tiltError: tilt.error,
+                    onRecenter: tilt.recenter,
                     buttons: controller.buttons,
                     onLeftChanged: controller.girarIzquierda,
                     onRightChanged: controller.girarDerecha,

@@ -12,6 +12,8 @@
 	<string>Bluetooth conecta el control con tu robot agbot para conducirlo.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Bluetooth permite enviar órdenes a tu robot agbot.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>El acelerómetro permite dirigir tu robot agbot inclinando el teléfono como un volante.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

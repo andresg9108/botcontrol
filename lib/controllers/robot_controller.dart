@@ -38,6 +38,49 @@ class RobotController extends ChangeNotifier {
   String? error;
   RobotStatus status = const RobotStatus();
   int get buttons => RobotProtocol.command(_buttons);
+  int _manualTurnPercent = 50;
+  int _tiltTurnPercent = 0;
+  bool _accelerometerEnabled = false;
+  int get manualTurnPercent => _manualTurnPercent;
+  int get turnPercent =>
+      _accelerometerEnabled ? _tiltTurnPercent : _manualTurnPercent;
+  List<int> get commandPacket => RobotProtocol.packet(buttons, turnPercent);
+
+  void setManualTurnPercent(int value) {
+    final percent = value.clamp(0, 100);
+    if (_manualTurnPercent == percent) return;
+    _manualTurnPercent = percent;
+    _update();
+    if (!_accelerometerEnabled) unawaited(_send());
+  }
+
+  void setAccelerometerEnabled(bool enabled) {
+    if (_accelerometerEnabled == enabled) return;
+    _accelerometerEnabled = enabled;
+    stop();
+  }
+
+  // Una sola actualización evita enviar estados intermedios al cambiar de lado.
+  void setTiltSteering(int signedPercent) {
+    if (!_accelerometerEnabled ||
+        !connected ||
+        status.outputFault ||
+        buttons & 3 == 0) {
+      return;
+    }
+    final percent = signedPercent.clamp(-100, 100);
+    final direction = percent < 0
+        ? RobotProtocol.izquierda
+        : percent > 0
+        ? RobotProtocol.derecha
+        : 0;
+    if (buttons & 12 == direction && _tiltTurnPercent == percent.abs()) return;
+    _buttons.removeAll([RobotProtocol.izquierda, RobotProtocol.derecha]);
+    if (direction != 0) _buttons.add(direction);
+    _tiltTurnPercent = percent.abs();
+    _update();
+    unawaited(_send());
+  }
 
   void _update() {
     if (!_disposed) notifyListeners();
@@ -218,7 +261,7 @@ class RobotController extends ChangeNotifier {
       // Toda conexión comienza con los motores detenidos.
       // Every connection starts with the motors stopped.
       await _ble
-          .writeCharacteristicWithResponse(_writer!, value: [0])
+          .writeCharacteristicWithResponse(_writer!, value: [0, 0])
           .timeout(const Duration(seconds: 2));
       if (session != _session) return;
       connected = true;
@@ -255,12 +298,17 @@ class RobotController extends ChangeNotifier {
   void _setButton(int bit, bool pressed) {
     if (!connected || status.outputFault) return;
     pressed ? _buttons.add(bit) : _buttons.remove(bit);
+    if (_accelerometerEnabled && buttons & 3 == 0) {
+      _buttons.removeAll([RobotProtocol.izquierda, RobotProtocol.derecha]);
+      _tiltTurnPercent = 0;
+    }
     _update();
     unawaited(_send());
   }
 
   void stop() {
     _buttons.clear();
+    _tiltTurnPercent = 0;
     _update();
     unawaited(_send());
   }
@@ -277,7 +325,7 @@ class RobotController extends ChangeNotifier {
       while (_pending && connected && session == _session) {
         _pending = false;
         await _ble
-            .writeCharacteristicWithResponse(_writer!, value: [buttons])
+            .writeCharacteristicWithResponse(_writer!, value: commandPacket)
             .timeout(const Duration(milliseconds: 400));
       }
     } catch (failure) {

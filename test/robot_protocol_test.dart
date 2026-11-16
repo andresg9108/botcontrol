@@ -2,6 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remotecontrol/protocol/robot_protocol.dart';
 
 void main() {
+  test('Codifica los dos bytes documentados por el firmware', () {
+    expect(RobotProtocol.packet(5, 25), [0x05, 0x19]);
+    expect(RobotProtocol.packet(9, 75), [0x09, 0x4b]);
+    expect(RobotProtocol.packet(6, 100), [0x06, 0x64]);
+    expect(RobotProtocol.packet(10, 35), [0x0a, 35]);
+    expect(RobotProtocol.packet(5, 0), [5, 0]);
+    expect(RobotProtocol.packet(1, 75), [1, 0]);
+    expect(RobotProtocol.packet(0, 50), [0, 0]);
+    for (final buttons in [3, 12, 16, -1]) {
+      expect(RobotProtocol.packet(buttons, 50), [0, 0]);
+    }
+    expect(RobotProtocol.packet(5, 101), [0, 0]);
+    expect(RobotProtocol.packet(5, -1), [0, 0]);
+  });
+
   test('Los movimientos combinados coinciden con el protocolo del ESP32', () {
     expect(RobotProtocol.command({}), 0x00);
     expect(RobotProtocol.command({RobotProtocol.adelante}), 0x01);
